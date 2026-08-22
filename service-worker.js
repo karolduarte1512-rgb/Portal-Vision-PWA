@@ -1,0 +1,109 @@
+const CACHE_NAME = 'portal-vision-pwa-v692-update-system';
+
+const SHELL = [
+  './',
+  './index.html',
+  './config.js',
+  './manifest.webmanifest',
+  './icon-192-v5.png',
+  './icon-512-v5.png'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL))
+  );
+  // V6.9.2: não ativa automaticamente.
+  // Aguarda o usuário tocar em "ATUALIZAR AGORA".
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // Só fazemos cache da casca da PWA.
+  // O Portal do Apps Script continua online e dinâmico.
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+  }
+});
+
+
+self.addEventListener('push', event => {
+  if (!event.data) return;
+
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (_) {
+    data = { title: 'Portal Vision', body: event.data.text() };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(
+      data.title || 'Portal Vision',
+      {
+        body: data.body || '',
+        icon: data.icon || './icon-192-v5.png',
+        badge: data.badge || './icon-192-v5.png',
+        tag: data.tag || ('portal-' + Date.now()),
+        data: {
+          url: data.url || './'
+        }
+      }
+    )
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) || './';
+
+  event.waitUntil(
+    self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then(clients => {
+      for (const client of clients) {
+        if ('focus' in client) {
+          client.focus();
+          return client;
+        }
+      }
+
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
