@@ -4,7 +4,7 @@ const PORTAL_VISION_URL =
 
 // V6.7 — Push Notifications
 const PORTAL_PUSH_WORKER_URL =
-  'COLE_AQUI_A_URL_DO_WORKER_PUSH';
+  'https://portal-vision-push.du4rte.workers.dev/';
 
 const PORTAL_VAPID_PUBLIC_KEY =
   'BBxhWG97AO-oFD10GT1t_aKt9qZfAHr41Uetx1hTN7DMPxfBMpjMNd8n7VVvHaMTjdn0VwGQiDoeu5fgylmXpdU';
