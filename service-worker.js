@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-vision-pwa-v692-update-system';
+const CACHE_NAME = 'portal-vision-pwa-v692-update-system-teste';
 
 const SHELL = [
   './',
