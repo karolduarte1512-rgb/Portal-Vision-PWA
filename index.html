@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#061b3a">
+  <meta name="theme-color" content="#5A1023">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Portal Vision">
@@ -15,7 +15,7 @@
 
   <style>
     :root {
-      --navy:#061b3a;
+      --navy:#5A1023;
       --bg:#f4f7fb;
       --white:#fff;
       --muted:#667085;
@@ -67,7 +67,7 @@
       align-items:center;
       justify-content:center;
       padding:24px;
-      background:linear-gradient(160deg,#061b3a 0%,#0b2b52 58%,#1768c5 100%);
+      background:linear-gradient(160deg,#5A1023 0%,#741A32 58%,#9A2442 100%);
       color:#fff;
       text-align:center;
       transition:opacity .2s ease, visibility .2s ease;
@@ -232,7 +232,100 @@
       });
     }
 
-    abrirPortalIntegrado();
+
+    function base64UrlParaUint8Array(base64Url) {
+      const padding = '='.repeat((4 - base64Url.length % 4) % 4);
+      const base64 = (base64Url + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      const raw = atob(base64);
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    }
+
+    let identidadePush = null;
+
+    async function registrarPushPortal() {
+      if (!identidadePush || !identidadePush.pushAuthToken) {
+        return { ok:false, motivo:'Faça login no Portal primeiro.' };
+      }
+
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('Este aparelho/navegador não oferece suporte a notificações push.');
+        return { ok:false };
+      }
+
+      if (
+        typeof PORTAL_PUSH_WORKER_URL !== 'string' ||
+        !PORTAL_PUSH_WORKER_URL.startsWith('https://') ||
+        PORTAL_PUSH_WORKER_URL.includes('COLE_AQUI')
+      ) {
+        alert('O servidor de notificações ainda não foi configurado.');
+        return { ok:false };
+      }
+
+      const permissao = await Notification.requestPermission();
+      if (permissao !== 'granted') {
+        alert('As notificações não foram autorizadas neste dispositivo.');
+        return { ok:false };
+      }
+
+      const registro = await navigator.serviceWorker.ready;
+      let assinatura = await registro.pushManager.getSubscription();
+
+      if (!assinatura) {
+        assinatura = await registro.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64UrlParaUint8Array(
+            PORTAL_VAPID_PUBLIC_KEY
+          )
+        });
+      }
+
+      const resposta = await fetch(
+        PORTAL_PUSH_WORKER_URL.replace(/\/+$/, '') + '/subscribe',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            authToken: identidadePush.pushAuthToken,
+            subscription: assinatura.toJSON()
+          })
+        }
+      );
+
+      if (!resposta.ok) {
+        throw new Error('Falha ao registrar este aparelho para notificações.');
+      }
+
+      try {
+        localStorage.setItem('portal-vision-push-ativo', '1');
+      } catch (_) {}
+
+      alert('✅ Notificações ativadas neste dispositivo.');
+      return { ok:true };
+    }
+
+    window.addEventListener('message', function(event) {
+      const dados = event.data || {};
+
+      if (dados.type === 'PORTAL_VISION_AUTH') {
+        identidadePush = {
+          perfil: String(dados.perfil || ''),
+          id: String(dados.id || ''),
+          pushAuthToken: String(dados.pushAuthToken || '')
+        };
+        return;
+      }
+
+      if (dados.type === 'PORTAL_VISION_REQUEST_PUSH') {
+        registrarPushPortal().catch(function(erro) {
+          alert('❌ ' + (erro && erro.message ? erro.message : 'Não foi possível ativar notificações.'));
+        });
+      }
+    });
+
+
+        abrirPortalIntegrado();
   </script>
 </body>
 </html>

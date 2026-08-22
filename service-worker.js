@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-vision-pwa-v2';
+const CACHE_NAME = 'portal-vision-pwa-v671-wine';
 
 const SHELL = [
   './',
@@ -46,3 +46,56 @@ self.addEventListener('fetch', event => {
     );
   }
 });
+
+
+self.addEventListener('push', event => {
+  if (!event.data) return;
+
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (_) {
+    data = { title: 'Portal Vision', body: event.data.text() };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(
+      data.title || 'Portal Vision',
+      {
+        body: data.body || '',
+        icon: data.icon || './icon-192.png',
+        badge: data.badge || './icon-192.png',
+        tag: data.tag || ('portal-' + Date.now()),
+        data: {
+          url: data.url || './'
+        }
+      }
+    )
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) || './';
+
+  event.waitUntil(
+    self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then(clients => {
+      for (const client of clients) {
+        if ('focus' in client) {
+          client.focus();
+          return client;
+        }
+      }
+
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
