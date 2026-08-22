@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5A1023">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Portal Vision">
+
+  <title>Portal Vision</title>
+
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon-192-v2.png">
+
+  <style>
+    :root {
+      --navy:#5A1023;
+      --bg:#f4f7fb;
+      --white:#fff;
+      --muted:#667085;
+    }
+
+    * { box-sizing:border-box; }
+
+    html, body {
+      width:100%;
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      background:var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    }
+
+    body {
+      min-height:100dvh;
+    }
+
+    .app-shell {
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      background:var(--bg);
+    }
+
+    #portalFrame {
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      border:0;
+      background:var(--bg);
+      opacity:0;
+      transition:opacity .18s ease;
+    }
+
+    #portalFrame.ready {
+      opacity:1;
+    }
+
+    .loading-screen {
+      position:absolute;
+      inset:0;
+      z-index:2;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:linear-gradient(160deg,#5A1023 0%,#741A32 58%,#9A2442 100%);
+      color:#fff;
+      text-align:center;
+      transition:opacity .2s ease, visibility .2s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+    }
+
+    .loading-card {
+      width:min(100%,360px);
+    }
+
+    .logo {
+      width:88px;
+      height:88px;
+      margin:0 auto 18px;
+      border-radius:22px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+      display:grid;
+      place-items:center;
+      font-size:42px;
+      font-weight:900;
+      box-shadow:0 18px 42px rgba(0,0,0,.18);
+    }
+
+    h1 {
+      margin:0;
+      font-size:27px;
+    }
+
+    p {
+      margin:8px 0 0;
+      font-size:13px;
+      line-height:1.5;
+      opacity:.82;
+    }
+
+    .loader {
+      width:36px;
+      height:36px;
+      margin:22px auto 0;
+      border:3px solid rgba(255,255,255,.25);
+      border-top-color:#fff;
+      border-radius:50%;
+      animation:girar .8s linear infinite;
+    }
+
+    .error-box {
+      display:none;
+      margin-top:18px;
+      padding:12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .error-box.show { display:block; }
+
+    .error-box button {
+      width:100%;
+      min-height:44px;
+      margin-top:10px;
+      border:0;
+      border-radius:10px;
+      background:#fff;
+      color:var(--navy);
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    @keyframes girar {
+      to { transform:rotate(360deg); }
+    }
+  
+    /* ===== SCANNER QR V6.7.4 ===== */
+    .qr-scanner-overlay {
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:none;
+      background:#12080d;
+      color:#fff;
+    }
+
+    .qr-scanner-overlay.show {
+      display:flex;
+      flex-direction:column;
+    }
+
+    .qr-scanner-head {
+      padding:
+        calc(14px + env(safe-area-inset-top))
+        16px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background:#5A1023;
+    }
+
+    .qr-scanner-head strong {
+      font-size:14px;
+    }
+
+    .qr-scanner-close {
+      border:0;
+      border-radius:9px;
+      background:rgba(255,255,255,.14);
+      color:#fff;
+      min-width:42px;
+      height:38px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .qr-camera-wrap {
+      position:relative;
+      flex:1;
+      min-height:0;
+      overflow:hidden;
+      background:#000;
+    }
+
+    #qrScannerVideoV674 {
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .qr-target-v674 {
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:min(68vw,290px);
+      aspect-ratio:1;
+      transform:translate(-50%,-50%);
+      border:3px solid #fff;
+      border-radius:20px;
+      box-shadow:
+        0 0 0 999px rgba(0,0,0,.42),
+        0 0 24px rgba(255,255,255,.18);
+      pointer-events:none;
+    }
+
+    .qr-scanner-foot {
+      padding:14px 18px calc(18px + env(safe-area-inset-bottom));
+      background:#5A1023;
+      text-align:center;
+    }
+
+    .qr-scanner-foot strong {
+      display:block;
+      font-size:13px;
+    }
+
+    .qr-scanner-foot span {
+      display:block;
+      margin-top:4px;
+      font-size:10px;
+      opacity:.82;
+      line-height:1.4;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <div id="loadingScreen" class="loading-screen">
+      <div class="loading-card">
+        <div class="logo">V</div>
+        <h1>Portal Vision</h1>
+        <p>Carregando o portal do condomínio...</p>
+        <div class="loader"></div>
+
+        <div id="errorBox" class="error-box">
+          Não foi possível abrir o Portal Vision.
+          <button type="button" onclick="recarregarPortal()">TENTAR NOVAMENTE</button>
+        </div>
+      </div>
+    </div>
+
+    <iframe
+      id="portalFrame"
+      title="Portal Vision"
+      allow="clipboard-read; clipboard-write"
+      referrerpolicy="strict-origin-when-cross-origin">
+    </iframe>
+  </div>
+
+  <script src="./config.js"></script>
+
+  <script>
+    const frame = document.getElementById('portalFrame');
+    const loading = document.getElementById('loadingScreen');
+    const errorBox = document.getElementById('errorBox');
+
+    function urlConfigurada() {
+      return (
+        typeof PORTAL_VISION_URL === 'string' &&
+        PORTAL_VISION_URL.startsWith('https://') &&
+        !PORTAL_VISION_URL.includes('COLE_AQUI')
+      );
+    }
+
+    function abrirPortalIntegrado() {
+      if (!urlConfigurada()) {
+        errorBox.classList.add('show');
+        return;
+      }
+
+      let concluiu = false;
+
+      const timeout = setTimeout(function () {
+        if (!concluiu) {
+          errorBox.classList.add('show');
+        }
+      }, 12000);
+
+      frame.onload = function () {
+        concluiu = true;
+        clearTimeout(timeout);
+        frame.classList.add('ready');
+        loading.classList.add('hidden');
+      };
+
+      frame.src = PORTAL_VISION_URL;
+    }
+
+    function recarregarPortal() {
+      errorBox.classList.remove('show');
+      frame.classList.remove('ready');
+      loading.classList.remove('hidden');
+      frame.src = 'about:blank';
+
+      setTimeout(abrirPortalIntegrado, 150);
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker
+          .register('./service-worker.js')
+          .catch(function (erro) {
+            console.warn('Service Worker não registrado:', erro);
+          });
+      });
+    }
+
+
+    function base64UrlParaUint8Array(base64Url) {
+      const padding = '='.repeat((4 - base64Url.length % 4) % 4);
+      const base64 = (base64Url + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      const raw = atob(base64);
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    }
+
+    let identidadePush = null;
+
+    async function registrarPushPortal() {
+      if (!identidadePush || !identidadePush.pushAuthToken) {
+        alert(
+          'O Portal ainda não enviou a identificação deste acesso. ' +
+          'Saia, entre novamente no Portal e tente outra vez.'
+        );
+        return { ok:false, motivo:'Identidade de push ausente.' };
+      }
+
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('Este aparelho/navegador não oferece suporte a notificações push.');
+        return { ok:false };
+      }
+
+      if (
+        typeof PORTAL_PUSH_WORKER_URL !== 'string' ||
+        !PORTAL_PUSH_WORKER_URL.startsWith('https://') ||
+        PORTAL_PUSH_WORKER_URL.includes('COLE_AQUI')
+      ) {
+        alert('O servidor de notificações ainda não foi configurado.');
+        return { ok:false };
+      }
+
+      const permissao = await Notification.requestPermission();
+      if (permissao !== 'granted') {
+        alert('As notificações não foram autorizadas neste dispositivo.');
+        return { ok:false };
+      }
+
+      const registro = await navigator.serviceWorker.ready;
+      let assinatura = await registro.pushManager.getSubscription();
+
+      if (!assinatura) {
+        assinatura = await registro.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64UrlParaUint8Array(
+            PORTAL_VAPID_PUBLIC_KEY
+          )
+        });
+      }
+
+      // Confirma que o Worker está acessível antes de registrar o aparelho.
+      try {
+        const health = await fetch(
+          PORTAL_PUSH_WORKER_URL.replace(/\/+$/, '') + '/health'
+        );
+        if (!health.ok) {
+          throw new Error('Worker indisponível: HTTP ' + health.status);
+        }
+      } catch (erroHealth) {
+        throw new Error(
+          'Não foi possível acessar o servidor de notificações. ' +
+          (erroHealth && erroHealth.message ? erroHealth.message : '')
+        );
+      }
+
+      const resposta = await fetch(
+        PORTAL_PUSH_WORKER_URL.replace(/\/+$/, '') + '/subscribe',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            authToken: identidadePush.pushAuthToken,
+            subscription: assinatura.toJSON(),
+            preferences: pushPrefsLocalV68()
+          })
+        }
+      );
+
+      if (!resposta.ok) {
+        let detalhe = '';
+        try {
+          detalhe = await resposta.text();
+        } catch (_) {}
+
+        throw new Error(
+          'Falha ao registrar este aparelho para notificações. ' +
+          'HTTP ' + resposta.status +
+          (detalhe ? ' • ' + detalhe : '')
+        );
+      }
+
+      try {
+        localStorage.setItem('portal-vision-push-ativo', '1');
+      } catch (_) {}
+
+      alert('✅ Notificações ativadas neste dispositivo.');
+      return { ok:true };
+    }
+
+    window.addEventListener('message', function(event) {
+      const dados = event.data || {};
+
+      if (dados.type === 'PORTAL_VISION_AUTH') {
+        identidadePush = {
+          perfil: String(dados.perfil || ''),
+          id: String(dados.id || ''),
+          pushAuthToken: String(dados.pushAuthToken || '')
+        };
+        return;
+      }
+
+      if (dados.type === 'PORTAL_VISION_SCAN_QR') {
+        abrirScannerQrV674();
+        return;
+      }
+
+      if (dados.type === 'PORTAL_VISION_PUSH_PREFS_GET') {
+        enviarMensagemPortalV674({
+          type:'PORTAL_VISION_PUSH_PREFS_RESULT',
+          preferencias:pushPrefsLocalV68()
+        });
+        return;
+      }
+
+      if (dados.type === 'PORTAL_VISION_PUSH_PREFS_SET') {
+        const prefs = {
+          lavanderia: dados.preferencias?.lavanderia !== false,
+          encomendas: dados.preferencias?.encomendas !== false,
+          comunicados: dados.preferencias?.comunicados !== false,
+          solicitacoes: dados.preferencias?.solicitacoes !== false
+        };
+
+        try {
+          localStorage.setItem(
+            PUSH_PREFS_KEY_V68,
+            JSON.stringify(prefs)
+          );
+        } catch (_) {}
+
+        enviarPrefsWorkerV68(prefs)
+          .then(function() {
+            enviarMensagemPortalV674({
+              type:'PORTAL_VISION_PUSH_PREFS_SAVED',
+              preferencias:prefs
+            });
+          })
+          .catch(function(erro) {
+            alert('❌ ' + (erro?.message || 'Falha ao salvar preferências.'));
+          });
+        return;
+      }
+
+      if (dados.type === 'PORTAL_VISION_SOL_PHOTO_UPLOAD') {
+        uploadFotoSolicitacaoV68(dados.dataUrl || '')
+          .then(function(resultado) {
+            enviarMensagemPortalV674({
+              type:'PORTAL_VISION_SOL_PHOTO_RESULT',
+              url:resultado.url || ''
+            });
+          })
+          .catch(function(erro) {
+            enviarMensagemPortalV674({
+              type:'PORTAL_VISION_SOL_PHOTO_ERROR',
+              mensagem:erro?.message || 'Falha ao enviar foto.'
+            });
+          });
+        return;
+      }
+
+      if (dados.type === 'PORTAL_VISION_REQUEST_PUSH') {
+        registrarPushPortal().catch(function(erro) {
+          alert(
+            '❌ ' +
+            (erro && erro.message
+              ? erro.message
+              : 'Não foi possível ativar notificações.')
+          );
+        });
+      }
+    });
+
+
+    
+    let qrScannerStreamV674 = null;
+    let qrScannerLoopV674 = null;
+    let qrScannerDetectorV674 = null;
+
+    function enviarMensagemPortalV674(mensagem) {
+      try {
+        if (
+          frame &&
+          frame.contentWindow
+        ) {
+          frame.contentWindow.postMessage(
+            mensagem,
+            '*'
+          );
+          return true;
+        }
+      } catch (_) {}
+
+      return false;
+    }
+
+    async function abrirScannerQrV674() {
+      const overlay =
+        document.getElementById(
+          'qrScannerOverlayV674'
+        );
+
+      const video =
+        document.getElementById(
+          'qrScannerVideoV674'
+        );
+
+      if (!overlay || !video) return;
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        enviarMensagemPortalV674({
+          type:'PORTAL_VISION_QR_ERROR',
+          mensagem:
+            'A câmera não está disponível neste navegador.'
+        });
+        return;
+      }
+
+      if (!('BarcodeDetector' in window)) {
+        enviarMensagemPortalV674({
+          type:'PORTAL_VISION_QR_ERROR',
+          mensagem:
+            'Este navegador ainda não oferece leitura automática de QR Code. Use o Chrome atualizado no Android.'
+        });
+        return;
+      }
+
+      try {
+        const formatos =
+          await BarcodeDetector.getSupportedFormats();
+
+        if (!formatos.includes('qr_code')) {
+          throw new Error(
+            'Leitura de QR Code não suportada neste aparelho.'
+          );
+        }
+
+        qrScannerDetectorV674 =
+          new BarcodeDetector({
+            formats:['qr_code']
+          });
+
+        qrScannerStreamV674 =
+          await navigator.mediaDevices.getUserMedia({
+            video:{
+              facingMode:{
+                ideal:'environment'
+              },
+              width:{ideal:1280},
+              height:{ideal:1280}
+            },
+            audio:false
+          });
+
+        video.srcObject = qrScannerStreamV674;
+        await video.play();
+
+        overlay.classList.add('show');
+        overlay.setAttribute(
+          'aria-hidden',
+          'false'
+        );
+
+        lerQuadroScannerQrV674();
+
+      } catch (erro) {
+        fecharScannerQrV674();
+
+        enviarMensagemPortalV674({
+          type:'PORTAL_VISION_QR_ERROR',
+          mensagem:
+            erro && erro.message
+              ? erro.message
+              : 'Não foi possível abrir a câmera.'
+        });
+      }
+    }
+
+    async function lerQuadroScannerQrV674() {
+      const video =
+        document.getElementById(
+          'qrScannerVideoV674'
+        );
+
+      if (
+        !qrScannerDetectorV674 ||
+        !video ||
+        video.readyState < 2
+      ) {
+        qrScannerLoopV674 =
+          requestAnimationFrame(
+            lerQuadroScannerQrV674
+          );
+        return;
+      }
+
+      try {
+        const codigos =
+          await qrScannerDetectorV674.detect(
+            video
+          );
+
+        if (codigos && codigos.length) {
+          const valor =
+            String(
+              codigos[0].rawValue || ''
+            ).trim();
+
+          if (valor) {
+            fecharScannerQrV674();
+
+            enviarMensagemPortalV674({
+              type:'PORTAL_VISION_QR_RESULT',
+              valor:valor
+            });
+
+            return;
+          }
+        }
+      } catch (_) {}
+
+      qrScannerLoopV674 =
+        requestAnimationFrame(
+          lerQuadroScannerQrV674
+        );
+    }
+
+    function fecharScannerQrV674() {
+      if (qrScannerLoopV674) {
+        cancelAnimationFrame(
+          qrScannerLoopV674
+        );
+        qrScannerLoopV674 = null;
+      }
+
+      if (qrScannerStreamV674) {
+        qrScannerStreamV674
+          .getTracks()
+          .forEach(track => track.stop());
+
+        qrScannerStreamV674 = null;
+      }
+
+      const video =
+        document.getElementById(
+          'qrScannerVideoV674'
+        );
+
+      if (video) {
+        video.pause();
+        video.srcObject = null;
+      }
+
+      const overlay =
+        document.getElementById(
+          'qrScannerOverlayV674'
+        );
+
+      if (overlay) {
+        overlay.classList.remove('show');
+        overlay.setAttribute(
+          'aria-hidden',
+          'true'
+        );
+      }
+
+      qrScannerDetectorV674 = null;
+    }
+
+
+    
+    const PUSH_PREFS_KEY_V68 = 'portal-vision-push-prefs-v68';
+
+    function pushPrefsLocalV68() {
+      const padrao = {
+        lavanderia:true,
+        encomendas:true,
+        comunicados:true,
+        solicitacoes:true
+      };
+
+      try {
+        return {
+          ...padrao,
+          ...JSON.parse(localStorage.getItem(PUSH_PREFS_KEY_V68) || '{}')
+        };
+      } catch (_) {
+        return padrao;
+      }
+    }
+
+    async function enviarPrefsWorkerV68(preferencias) {
+      if (!identidadePush?.pushAuthToken) {
+        throw new Error('Faça login novamente antes de salvar preferências.');
+      }
+
+      const resposta = await fetch(
+        PORTAL_PUSH_WORKER_URL.replace(/\/+$/,'') + '/preferences',
+        {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            authToken:identidadePush.pushAuthToken,
+            preferences:preferencias
+          })
+        }
+      );
+
+      if (!resposta.ok) {
+        throw new Error('Não foi possível salvar as preferências.');
+      }
+
+      return await resposta.json();
+    }
+
+    async function uploadFotoSolicitacaoV68(dataUrl) {
+      if (!identidadePush?.pushAuthToken) {
+        throw new Error('Faça login novamente antes de anexar a foto.');
+      }
+
+      const resposta = await fetch(
+        PORTAL_PUSH_WORKER_URL.replace(/\/+$/,'') + '/ticket-photo',
+        {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            authToken:identidadePush.pushAuthToken,
+            dataUrl:String(dataUrl || '')
+          })
+        }
+      );
+
+      if (!resposta.ok) {
+        let detalhe='';
+        try { detalhe=await resposta.text(); } catch (_) {}
+        throw new Error('Falha no envio da foto. HTTP ' + resposta.status + (detalhe ? ' • ' + detalhe : ''));
+      }
+
+      return await resposta.json();
+    }
+
+        abrirPortalIntegrado();
+  </script>
+
+  <div id="qrScannerOverlayV674" class="qr-scanner-overlay" aria-hidden="true">
+    <div class="qr-scanner-head">
+      <strong>📷 Escanear QR Code da máquina</strong>
+      <button type="button" class="qr-scanner-close" onclick="fecharScannerQrV674()">✕</button>
+    </div>
+
+    <div class="qr-camera-wrap">
+      <video id="qrScannerVideoV674" playsinline muted></video>
+      <div class="qr-target-v674"></div>
+    </div>
+
+    <div class="qr-scanner-foot">
+      <strong>Aponte para o QR Code da lavanderia</strong>
+      <span>A leitura acontece automaticamente.</span>
+    </div>
+  </div>
+
+</body>
+</html>
