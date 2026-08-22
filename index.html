@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061b3a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Portal Vision">
+
+  <title>Portal Vision</title>
+
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+
+  <style>
+    :root {
+      --navy: #061b3a;
+      --blue: #1768c5;
+      --text: #172033;
+      --muted: #667085;
+      --bg: #f4f7fb;
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+
+    .card {
+      width: min(100%, 440px);
+      background: var(--white);
+      border-radius: 20px;
+      padding: 28px 22px;
+      box-shadow: 0 20px 60px rgba(6,27,58,.16);
+      text-align: center;
+    }
+
+    .logo {
+      width: 92px;
+      height: 92px;
+      border-radius: 22px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, var(--navy), var(--blue));
+      color: white;
+      font-size: 42px;
+      font-weight: 900;
+      box-shadow: 0 10px 28px rgba(6,27,58,.20);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      color: var(--navy);
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+      margin: 10px 0 20px;
+    }
+
+    button {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--navy);
+      color: white;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(.99);
+    }
+
+    .small {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <div class="logo">V</div>
+
+    <h1>Portal Vision</h1>
+    <p>
+      Acesse lavanderia, encomendas, comunicados,
+      solicitações e demais serviços do condomínio.
+    </p>
+
+    <button type="button" onclick="abrirPortal()">
+      ENTRAR NO PORTAL
+    </button>
+
+    <div class="small">
+      Portal Vision • Condomínio Vision
+    </div>
+  </main>
+
+  <script>
+    // ==========================================================
+    // ALTERE APENAS ESTA URL PARA A URL /exec DO SEU WEB APP
+    // ==========================================================
+    const PORTAL_VISION_URL =
+      'https://script.google.com/macros/s/AKfycbyf-T7fN-P7qGANhMESMRPiPP4xz-mHmvNnmFM8p2IHpx3NBU6quzvY2vleIMqYrEPQpQ/exec';
+
+    function abrirPortal() {
+      if (
+        !PORTAL_VISION_URL ||
+        PORTAL_VISION_URL.includes('COLE_AQUI')
+      ) {
+        alert(
+          'A URL do Portal Vision ainda não foi configurada. ' +
+          'Abra o arquivo index.html e informe a URL do Web App.'
+        );
+        return;
+      }
+
+      window.location.href = PORTAL_VISION_URL;
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker
+          .register('./service-worker.js')
+          .catch(function (erro) {
+            console.warn('Service Worker não registrado:', erro);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
