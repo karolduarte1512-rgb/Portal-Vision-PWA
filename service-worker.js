@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-vision-pwa-v671-wine';
+const CACHE_NAME = 'portal-vision-pwa-v6711';
 
 const SHELL = [
   './',

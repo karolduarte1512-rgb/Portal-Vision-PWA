@@ -246,7 +246,11 @@
 
     async function registrarPushPortal() {
       if (!identidadePush || !identidadePush.pushAuthToken) {
-        return { ok:false, motivo:'Faça login no Portal primeiro.' };
+        alert(
+          'O Portal ainda não enviou a identificação deste acesso. ' +
+          'Saia, entre novamente no Portal e tente outra vez.'
+        );
+        return { ok:false, motivo:'Identidade de push ausente.' };
       }
 
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -319,7 +323,12 @@
 
       if (dados.type === 'PORTAL_VISION_REQUEST_PUSH') {
         registrarPushPortal().catch(function(erro) {
-          alert('❌ ' + (erro && erro.message ? erro.message : 'Não foi possível ativar notificações.'));
+          alert(
+            '❌ ' +
+            (erro && erro.message
+              ? erro.message
+              : 'Não foi possível ativar notificações.')
+          );
         });
       }
     });
