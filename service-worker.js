@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-vision-pwa-v69-icons-v5-final';
+const CACHE_NAME = 'portal-vision-pwa-v69-icons-v5-teste';
 
 const SHELL = [
   './',
